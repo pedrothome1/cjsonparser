@@ -48,8 +48,8 @@ int parse(const char *filename) {
       /* Read what's inside the "object" */
 
       do {
-        /* Skip whitespaces */
-        while ((c = fgetc(fp)) != EOF && isspace(c))
+        /* Skip whitespaces and { */
+        while ((c = fgetc(fp)) != EOF && (isspace(c) || c == '{'))
           ;
 
         /* If we got to something that is not a double-quote, return with error */
@@ -178,10 +178,100 @@ int parse(const char *filename) {
 
         b = 0;  /* flush buffer */
 
-        /* Skip whitespaces and closing curly braces */
-        while (isspace(c) || c == '}')
+        /* Skip whitespaces and closing curly braces/square brackets */
+        while (isspace(c) || c == '}' || c == ']')
           c = fgetc(fp);
 
+      } while (c == ',');
+    }
+    else if (c == '[') {
+      do {
+        /* Skip whitespaces */
+        while ((c = fgetc(fp)) != EOF && isspace(c))
+          ;
+        
+        /* ======= Parsing the value ======= */
+        /*
+          Be careful so that `c` is consistent after parsing
+          any of the types. In this case, it will be the
+          character next to the last character of the value
+          being parsed.
+        */
+        if (c == '"') {
+          while ((c = fgetc(fp)) != EOF) {
+            if (c == '\\') {
+              c = fgetc(fp);
+              if (!isvalid_escape(c)) {
+                goto END;
+              }
+              c = escape(c);
+            }
+            else if (c == '"') {
+              buf[b] = '\0';
+              break;
+            }
+            buf[b++] = c;
+          }
+          c = fgetc(fp);
+          printf("Value: %s\n\n", buf);
+        }
+        /* Warning: Potential bug */
+        else if (isdigit(c)) {
+          buf[b++] = c;
+          /* We are not really validating the number */
+          /* If it's not valid will be 0.0 because of atof */
+          while ((c = fgetc(fp)) != EOF) {
+            if (isdigit(c) || c == '.') {
+              buf[b++] = c;
+            }
+            else {  /* May be a comma or a whitespace */
+              buf[b] = '\0';
+              break;
+            }
+          }
+          double num = atof(buf);
+          printf("Value: %f\n\n", num);
+        }
+        else if (c == 'n') {  /* null */
+          buf[b++] = c;
+          buf[b++] = fgetc(fp);
+          buf[b++] = fgetc(fp);
+          buf[b++] = fgetc(fp);
+          buf[b] = '\0';
+          if (strcmp(buf, "null") != 0)
+            goto END;
+          c = fgetc(fp);
+          printf("Value: %s\n\n", buf);
+        }
+        else if (c == 't') {  /* true */
+          buf[b++] = c;
+          buf[b++] = fgetc(fp);
+          buf[b++] = fgetc(fp);
+          buf[b++] = fgetc(fp);
+          buf[b] = '\0';
+          if (strcmp(buf, "true") != 0)
+            goto END;
+          c = fgetc(fp);
+          printf("Value: %s\n\n", buf);
+        }
+        else if (c == 'f') {  /* false */
+          buf[b++] = c;
+          buf[b++] = fgetc(fp);
+          buf[b++] = fgetc(fp);
+          buf[b++] = fgetc(fp);
+          buf[b++] = fgetc(fp);
+          buf[b] = '\0';
+          if (strcmp(buf, "false") != 0)
+            goto END;
+          c = fgetc(fp);
+          printf("Value: %s\n\n", buf);
+        }
+
+        b = 0;  /* flush buffer */
+
+        while (isspace(c))
+          c = fgetc(fp);
+        
       } while (c == ',');
     }
   }
