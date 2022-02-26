@@ -35,6 +35,7 @@ int escape(int c) {
   }
 }
 
+/* TODO: Validate bracket balancing */
 int parse(const char *filename) {
   FILE *fp = fopen(filename, "r");
   int c, retcode = -1; /* -1 is error */
