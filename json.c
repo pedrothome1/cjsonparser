@@ -4,7 +4,12 @@
 #include <ctype.h>
 #include "json.h"
 
-#define BUFSZ 100
+#define BUF_SIZE  100
+
+#define BUF_LAST  BUF_SIZE-1
+#define NULL_LEN  4
+#define TRUE_LEN  4
+#define FALSE_LEN 5
 
 int isvalid_escape(int c) {
   switch (c) {
@@ -30,12 +35,11 @@ int escape(int c) {
   }
 }
 
-/* TODO: I'm not checking for the bounds of the buffers */
 int parse(const char *filename) {
   FILE *fp = fopen(filename, "r");
   int c, retcode = -1; /* -1 is error */
-  int b = 0;
-  char buf[BUFSZ];
+  int b = 0;  /* MAX: BUF_LAST */
+  char buf[BUF_SIZE];
 
   c = fgetc(fp);
 
@@ -48,6 +52,9 @@ int parse(const char *filename) {
     }
     else if (c == '"') {
       while ((c = fgetc(fp)) != EOF) {
+        if (b > BUF_LAST)
+          goto END;
+
         if (c == '\\') {
           c = fgetc(fp);
           if (!isvalid_escape(c)) {
@@ -77,10 +84,14 @@ int parse(const char *filename) {
       }
     }
     else if (isdigit(c)) {
-      buf[b++] = c;
+      if (b <= BUF_LAST)
+        buf[b++] = c;
       /* We are not really validating the number */
       /* If it's not valid will be 0.0 because of atof */
       while ((c = fgetc(fp)) != EOF) {
+        if (b > BUF_LAST)
+          goto END;
+
         if (isdigit(c) || c == '.') {
           buf[b++] = c;
         }
@@ -93,6 +104,8 @@ int parse(const char *filename) {
       printf("Value: %f\n\n", num);
     }
     else if (c == 'n') {  /* null */
+      if (b > BUF_LAST - NULL_LEN)
+        goto END;
       buf[b++] = c;
       buf[b++] = fgetc(fp);
       buf[b++] = fgetc(fp);
@@ -104,6 +117,8 @@ int parse(const char *filename) {
       printf("Value: %s\n\n", buf);
     }
     else if (c == 't') {  /* true */
+      if (b > BUF_LAST - TRUE_LEN)
+        goto END;
       buf[b++] = c;
       buf[b++] = fgetc(fp);
       buf[b++] = fgetc(fp);
@@ -115,6 +130,8 @@ int parse(const char *filename) {
       printf("Value: %s\n\n", buf);
     }
     else if (c == 'f') {  /* false */
+      if (b > BUF_LAST - FALSE_LEN)
+        goto END;
       buf[b++] = c;
       buf[b++] = fgetc(fp);
       buf[b++] = fgetc(fp);
