@@ -1,11 +1,12 @@
 {
-  "glossary": {
+  "glos\\sary": {
     "title": "example glossary",
     "GlossDiv": {
       "title": "S",
       "num": 3.7,
       "nil": null,
       "bol": false,
+      "bol2": true,
       "GlossList": {
         "GlossEntry": {
           "ID": "SGML",
@@ -14,11 +15,7 @@
           "Acronym": "SGML",
           "Abbrev": "ISO 8879:1986",
           "GlossDef": {
-            "para": "A meta-markup language, used to create markup languages such as DocBook.",
-            "GlossSeeAlso": [
-              "GML",
-              "XML"
-            ]
+            "para": "A meta-markup language, used to create markup languages such as DocBook."
           },
           "GlossSee": "markup"
         }
