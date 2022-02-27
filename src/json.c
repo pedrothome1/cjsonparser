@@ -7,6 +7,9 @@
 #define BUF_SIZE 512
 #define BUF_LAST BUF_SIZE-1
 
+#define B_INC(b) (*(b) >= BUF_LAST) ? BUF_LAST : (*(b))++
+#define B_GET(b) (*(b) >= BUF_LAST) ? BUF_LAST : *(b)
+
 int isvalid_escape(int c) {
   switch (c) {
   case '\\':
@@ -49,9 +52,6 @@ int parse(const char *filename) {
     }
     else if (c == '"') {
       while ((c = fgetc(fp)) != EOF) {
-        if (b > BUF_LAST)
-          goto END;
-
         if (c == '\\') {
           c = fgetc(fp);
           if (!isvalid_escape(c)) {
@@ -60,29 +60,25 @@ int parse(const char *filename) {
           c = escape(c);
         }
         else if (c == '"') {
-          buf[b] = '\0';
+          buf[B_GET(&b)] = '\0';
           break;
         }
-        buf[b++] = c;
+        buf[B_INC(&b)] = c;
       }
       c = fgetc(fp);
       printf("String: %s\n", buf);
     }
     else if (isdigit(c)) {
-      if (b <= BUF_LAST)
-        buf[b++] = c;
+      buf[B_INC(&b)] = c;
       
       /* We are not really validating the number */
       /* If it's not valid will be 0.0 because of atof */
       while ((c = fgetc(fp)) != EOF) {
-        if (b > BUF_LAST)
-          goto END;
-
         if (isdigit(c) || c == '.') {
-          buf[b++] = c;
+          buf[B_INC(&b)] = c;
         }
-        else {  /* May be a comma or a whitespace */
-          buf[b] = '\0';
+        else {
+          buf[B_GET(&b)] = '\0';
           break;
         }
       }
