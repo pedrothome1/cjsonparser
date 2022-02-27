@@ -4,12 +4,8 @@
 #include <ctype.h>
 #include "json.h"
 
-#define BUF_SIZE  100
-
-#define BUF_LAST  BUF_SIZE-1
-#define NULL_LEN  4
-#define TRUE_LEN  4
-#define FALSE_LEN 5
+#define BUF_SIZE 512
+#define BUF_LAST BUF_SIZE-1
 
 int isvalid_escape(int c) {
   switch (c) {
@@ -39,6 +35,7 @@ int escape(int c) {
 int parse(const char *filename) {
   FILE *fp = fopen(filename, "r");
   int c, retcode = -1; /* -1 is error */
+  
   int b = 0;  /* MAX: BUF_LAST */
   char buf[BUF_SIZE];
 
@@ -47,9 +44,8 @@ int parse(const char *filename) {
   while (c != EOF) {
     b = 0; /* flush buffer */
 
-    if (c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || isspace(c)) {
-      while ((c = fgetc(fp)) != EOF && isspace(c))
-        ;
+    if (c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || c == ':' || isspace(c)) {
+      c = fgetc(fp);
     }
     else if (c == '"') {
       while ((c = fgetc(fp)) != EOF) {
@@ -69,24 +65,13 @@ int parse(const char *filename) {
         }
         buf[b++] = c;
       }
-      
-      while ((c = fgetc(fp)) != EOF && isspace(c))
-        ;
-
-      if (c == ':') {
-        printf("Key: %s\n", buf);
-        while ((c = fgetc(fp)) != EOF && isspace(c))
-          ;
-      }
-      else if (c == ',' || c == '}' || c == ']') {
-        printf("Value: %s\n\n", buf);
-      } else {
-        goto END;
-      }
+      c = fgetc(fp);
+      printf("String: %s\n", buf);
     }
     else if (isdigit(c)) {
       if (b <= BUF_LAST)
         buf[b++] = c;
+      
       /* We are not really validating the number */
       /* If it's not valid will be 0.0 because of atof */
       while ((c = fgetc(fp)) != EOF) {
@@ -102,47 +87,31 @@ int parse(const char *filename) {
         }
       }
       double num = atof(buf);
-      printf("Value: %f\n\n", num);
+      printf("Number: %f\n", num);
     }
     else if (c == 'n') {  /* null */
-      if (b > BUF_LAST - NULL_LEN)
+      char tmp[] = { c, fgetc(fp), fgetc(fp), fgetc(fp), '\0' };
+      if (strcmp(tmp, "null") == 0)
+        c = fgetc(fp);
+      else
         goto END;
-      buf[b++] = c;
-      buf[b++] = fgetc(fp);
-      buf[b++] = fgetc(fp);
-      buf[b++] = fgetc(fp);
-      buf[b] = '\0';
-      if (strcmp(buf, "null") != 0)
-        goto END;
-      c = fgetc(fp);
-      printf("Value: %s\n\n", buf);
+      printf("null\n");
     }
     else if (c == 't') {  /* true */
-      if (b > BUF_LAST - TRUE_LEN)
+      char tmp[] = { c, fgetc(fp), fgetc(fp), fgetc(fp), '\0' };
+      if (strcmp(tmp, "true") == 0)
+        c = fgetc(fp);
+      else
         goto END;
-      buf[b++] = c;
-      buf[b++] = fgetc(fp);
-      buf[b++] = fgetc(fp);
-      buf[b++] = fgetc(fp);
-      buf[b] = '\0';
-      if (strcmp(buf, "true") != 0)
-        goto END;
-      c = fgetc(fp);
-      printf("Value: %s\n\n", buf);
+      printf("true\n");
     }
     else if (c == 'f') {  /* false */
-      if (b > BUF_LAST - FALSE_LEN)
+      char tmp[] = { c, fgetc(fp), fgetc(fp), fgetc(fp), fgetc(fp), '\0' };
+      if (strcmp(tmp, "false") == 0)
+        c = fgetc(fp);
+      else
         goto END;
-      buf[b++] = c;
-      buf[b++] = fgetc(fp);
-      buf[b++] = fgetc(fp);
-      buf[b++] = fgetc(fp);
-      buf[b++] = fgetc(fp);
-      buf[b] = '\0';
-      if (strcmp(buf, "false") != 0)
-        goto END;
-      c = fgetc(fp);
-      printf("Value: %s\n\n", buf);
+      printf("false\n");
     }
     else {
       printf("Invalid token `%c`\n", c);
