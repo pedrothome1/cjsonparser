@@ -1,11 +1,13 @@
 {
   "glossary": {
     "title": "example glossary",
+    "obj": {},
     "GlossDiv": {
       "title": "S",
       "num": 3.7,
       "nil": null,
       "bol": false,
+      "bol2": true,
       "GlossList": {
         "GlossEntry": {
           "ID": "SGML",

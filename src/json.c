@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "json.h"
+#include "chstack.h"
 
 #define BUF_SIZE 512
 #define BUF_LAST BUF_SIZE-1
@@ -42,12 +43,29 @@ int parse(const char *filename) {
   int b = 0;  /* MAX: BUF_LAST */
   char buf[BUF_SIZE];
 
+  ch_stack *brackets = cs_init(128);
+
   c = fgetc(fp);
 
   while (c != EOF) {
     b = 0; /* flush buffer */
 
-    if (c == '{' || c == '}' || c == '[' || c == ']' || c == ',' || c == ':' || isspace(c)) {
+    if (isspace(c)) {
+      c = fgetc(fp);
+      continue;
+    }
+
+    if (c == '{' || c == '[') {
+      cs_push(brackets, c);
+      c = fgetc(fp);
+    }
+    else if (c == '}' || c == ']') {
+      if (cs_isempty(brackets) || (cs_peek(brackets) != '{' && c == '}') || (cs_peek(brackets) != '[' && c == ']'))
+        goto END;
+      cs_pop(brackets);
+      c = fgetc(fp);
+    }
+    else if (c == ',' || c == ':') {
       c = fgetc(fp);
     }
     else if (c == '"') {
@@ -119,6 +137,7 @@ int parse(const char *filename) {
 
 END:
   fclose(fp);
+  cs_destroy(brackets);
 
   return retcode;
 }
