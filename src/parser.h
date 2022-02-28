@@ -1,5 +1,5 @@
-#ifndef JSON_H
-#define JSON_H
+#ifndef PARSER_H
+#define PARSER_H
 
 int parse(const char *filename);
 

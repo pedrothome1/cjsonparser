@@ -1,4 +1,4 @@
-#include "json.h"
+#include "parser.h"
 
 int main() {
   parse("example.json");
